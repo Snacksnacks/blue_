@@ -1,1 +1,2 @@
 # blue_
+#cryptoart #minted
