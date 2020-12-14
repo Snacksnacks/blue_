@@ -1,3 +1,3 @@
 # blue_
 permalink: /index.html
-permalink: /styles.css
+</br> permalink: /index.html
