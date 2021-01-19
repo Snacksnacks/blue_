@@ -1,5 +1,4 @@
-
-let scene, camera, renderer, mesh, controls, raycaster, particleSystem, particleCount, particles, onKeyDown, onKeyUp;
+let scene, camera, renderer, mesh, controls, raycaster, particleSystem, particleCount, pMaterial, particles, onKeyDown, onKeyUp;
 let objects = [];
 var meshFloor;
 
@@ -20,6 +19,7 @@ let clock = new THREE.Clock();
 
 init();
 animate();
+
 function init() {
 
     camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 1, 1000 );
@@ -117,13 +117,15 @@ function init() {
     document.addEventListener( 'keyup', onKeyUp, false );
 
     raycaster = new THREE.Raycaster( new THREE.Vector3(), new THREE.Vector3( 0, - 1, 0 ), 0, 10 );
-
 // floor
 
     let floorGeometry = new THREE.PlaneBufferGeometry( 1000, 1000, 100, 100 );
     floorGeometry.rotateX( - Math.PI / 2 ); // flip to see top side of floor
     
-    const floorMaterial = new THREE.MeshStandardMaterial({
+    const floorMaterial = new THREE.MeshPhongMaterial({
+        color: 0xF3FFE2,
+        specular: 0xff0000,
+        shininess: 40,
         map: new THREE.TextureLoader().load('adrien-olichon-R2OM3BvN-Uo-unsplash.jpg'), // load jpg as floor texture
         normalMap: new THREE.TextureLoader().load('adrien-olichon-R2OM3BvN-Uo-unsplash.jpg') // load jpg as floor texture
 
@@ -131,8 +133,6 @@ function init() {
 
     const floor = new THREE.Mesh( floorGeometry, floorMaterial ); // attach material to floor geometry
     scene.add( floor ); // add floor geometry to scene
-
-
 // objects
 
     const boxGeometry = new THREE.BoxBufferGeometry( 20, 20, 20 ).toNonIndexed();
@@ -151,13 +151,10 @@ function init() {
 
     for ( let i = 0; i < 500; i ++ ) {
 
-        // const boxMaterial = new THREE.MeshPhongMaterial( { specular: 0xffffff, flatShading: true, vertexColors: true } );
-        // boxMaterial.color.setHSL( Math.random() * 0.2 + 0.5, 0.75, Math.random() * 0.25 + 0.75 );
         const boxMaterial = new THREE.MeshStandardMaterial({
             color: 0xF3FFE2,
             roughness: 0.8,
             metalness: 0.9
-            // map: new THREE.TextureLoader().load('adrien-olichon-R2OM3BvN-Uo-unsplash.jpg') // load jpg as floor texture
         });
 
         const box = new THREE.Mesh( boxGeometry, boxMaterial );
@@ -180,7 +177,37 @@ function init() {
     //
 
     window.addEventListener( 'resize', onWindowResize, false );
+//particle system
+let loader = new THREE.TextureLoader();
+    loader.crossOrigin = '';
+   particleCount = 500;
+   let pMaterial = new THREE.PointCloudMaterial({
+      color: 0x000000,
+      size: 3.5,
+      map: loader.load(
+         "https://upload.wikimedia.org/wikipedia/commons/6/65/Black_sphere.svg"
+       ),
+       blending: THREE.AdditiveBlending,
+       depthTest: false,
+       transparent: true
+    });
 
+    particles = new THREE.Geometry;
+    for (var i = 0; i < particleCount; i++) {
+        var pX = Math.random()*500 - 250,
+            pY = Math.random()*500 - 250,
+            pZ = Math.random()*500 - 250,
+            particle = new THREE.Vector3(pX, pY, pZ);
+        particle.velocity = {};
+        particle.velocity.y = 0;
+        particles.vertices.push(particle);
+    }
+    particleSystem = new THREE.PointCloud(particles, pMaterial);
+    particleSystem.position.x = 100;
+    particleSystem.position.y = 100;
+    scene.add(particleSystem);
+    
+    
 }
 
 function onWindowResize() {
@@ -192,9 +219,23 @@ function onWindowResize() {
 
 }
 
+  
 function animate() {
 
+    
     requestAnimationFrame( animate );
+    // particles
+    var pCount = particleCount;
+    while (pCount--) {
+    var particle = particles.vertices[pCount];
+    if (particle.y < -200) {
+    particle.y = 200;
+    particle.velocity.y = 0;
+    }
+    particle.velocity.y -= Math.random() * .002;
+    particle.y += particle.velocity.y;
+    }
+    particles.verticesNeedUpdate = true;
 
     const time = performance.now();
 
@@ -243,7 +284,7 @@ function animate() {
         }
 
     }
-
+ 
     prevTime = time;
 
     renderer.render( scene, camera );
